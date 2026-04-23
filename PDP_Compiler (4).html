@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDP Compiler</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&family=Lexend:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0e0e0e;--surface:#181818;--surface2:#222;--border:#2e2e2e;
+    --accent:#c8ff57;--text:#f0f0f0;--muted:#888;--danger:#ff5757;--ok:#57ff9a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;padding-bottom:80px}
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:18px 32px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100}
+  .logo{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:var(--accent);background:rgba(200,255,87,0.1);border:1px solid rgba(200,255,87,0.3);padding:4px 10px;border-radius:4px;letter-spacing:.1em}
+  header h1{font-size:17px;font-weight:500;flex:1}
+  .auth-badge{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+  .auth-badge .dot{width:8px;height:8px;border-radius:50%;background:#555}
+  .auth-badge.connected .dot{background:var(--ok)}
+  .auth-badge.connected{color:var(--ok)}
+  .btn-auth{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:6px 14px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .15s}
+  .btn-auth:hover{border-color:#888;color:var(--text)}
+  .btn-auth.connected{border-color:var(--ok);color:var(--ok)}
+
+  .container{max-width:1060px;margin:0 auto;padding:28px 20px}
+  .meta-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 24px;margin-bottom:22px}
+  .section-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:14px}
+  .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+  input[type="text"],textarea{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .15s}
+  input:focus,textarea:focus{border-color:var(--accent)}
+  textarea{resize:none;overflow:hidden}
+  .hint{font-size:11px;color:var(--muted);margin-top:5px}
+  .hint span{color:var(--accent)}
+  .drive-path{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--muted);margin-top:0;display:none}
+  .drive-path.show{display:block}
+  .drive-path strong{color:var(--accent)}
+
+  .tabs{display:flex;margin-bottom:18px;border-bottom:1px solid var(--border)}
+  .tab{padding:10px 20px;font-size:13px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .tab-content{display:none}.tab-content.active{display:block}
+
+  .table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
+  table.et{width:100%;border-collapse:collapse;font-size:13px}
+  table.et th{background:#252525;color:var(--muted);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:9px 10px;border:1px solid var(--border);white-space:nowrap}
+  table.et td{border:1px solid var(--border);padding:3px 5px;vertical-align:middle;background:var(--surface)}
+  table.et tr.hl-green td{background:#142808}
+  table.et tr.hl-blue td{background:#081828}
+  table.et input[type="text"],table.et textarea{background:#1e1e1e;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:5px 7px;border-radius:4px;width:100%;outline:none}
+  table.et tr.hl-green input,table.et tr.hl-green textarea{background:#1c3a0a}
+  table.et tr.hl-blue input,table.et tr.hl-blue textarea{background:#0a1e30}
+  td.t-d,td.t-a{width:74px;min-width:70px}td.t-dv{width:140px}td.t-c{width:195px}td.t-r{width:175px}td.t-n{min-width:180px}
+  td.t-hl{width:76px;text-align:center}td.t-x{width:32px;text-align:center}
+  .hl-grp{display:flex;gap:5px;justify-content:center}
+  .hlb{width:20px;height:20px;border-radius:3px;border:1px solid #444;cursor:pointer;transition:all .12s;flex-shrink:0}
+  .hlb.n{background:#333}.hlb.n.on,.hlb.n:hover{background:#666;border-color:#999}
+  .hlb.g{background:#1a3a08;border-color:#3a7010}.hlb.g.on,.hlb.g:hover{background:#4abf15;border-color:#4abf15}
+  .hlb.b{background:#08203a;border-color:#1060a0}.hlb.b.on,.hlb.b:hover{background:#3a9fd4;border-color:#3a9fd4}
+  .xbtn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:17px;line-height:1;transition:color .12s}
+  .xbtn:hover{color:var(--danger)}
+  .add-btn{width:100%;margin-top:10px;background:var(--surface2);border:1px dashed var(--border);color:var(--muted);border-radius:8px;padding:11px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .15s}
+  .add-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+  .prev-wrap{overflow-x:auto;border-radius:10px;border:1px solid #bbb}
+  table.prev{border-collapse:collapse;font-family:'Lexend',sans-serif;font-size:12px;background:white;color:#111;min-width:700px;width:100%}
+  table.prev td,table.prev th{border:1px solid #b0b0b0;padding:5px 10px}
+  table.prev .r-title td{background:#d9d9d9;text-align:center;font-size:15px}
+  table.prev .r-head th{background:#d9d9d9;font-weight:700;text-align:center;font-size:11px}
+  table.prev .r-green td{background:#00ff00;font-weight:700}
+  table.prev .r-blue td{background:#9fc5e8;font-weight:700}
+  table.prev td.tc{text-align:center}
+
+  .actions{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:14px 28px;display:flex;justify-content:flex-end;gap:10px;z-index:100}
+  .btn-p{background:var(--accent);color:#111;border:none;border-radius:7px;padding:11px 22px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .15s}
+  .btn-p:hover{background:#b8ef47}
+  .btn-p:disabled{background:#555;color:#999;cursor:not-allowed}
+  .btn-drive{background:#1a73e8;color:#fff;border:none;border-radius:7px;padding:11px 22px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .15s}
+  .btn-drive:hover{background:#1557b0}
+  .btn-drive:disabled{background:#333;color:#666;cursor:not-allowed}
+  .btn-s{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:11px 18px;font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;transition:all .15s}
+  .btn-s:hover{border-color:#888}
+  .spinner{width:16px;height:16px;border:2px solid transparent;border-top-color:currentColor;border-radius:50%;animation:spin .7s linear infinite;display:none}
+  .spinner.show{display:block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);padding:13px 22px;border-radius:10px;font-size:13px;z-index:9999;display:none;max-width:520px;text-align:center;line-height:1.6;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+  .toast.show{display:block}
+  .toast.error{background:#3a0a0a;border:1px solid var(--danger);color:#ffaaaa}
+  .toast.success{background:#0a2a14;border:1px solid var(--ok);color:var(--ok)}
+  .toast a{color:inherit;text-decoration:underline;font-weight:600}
+
+  @media(max-width:600px){.meta-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="logo">PDP</span>
+  <h1>Compilatore PDP Automatico</h1>
+  <div class="auth-badge" id="authBadge">
+    <div class="dot"></div>
+    <span id="authLabel">Non connesso</span>
+  </div>
+  <button class="btn-auth" id="authBtn" onclick="handleAuth()">Connetti Google</button>
+</header>
+
+<div id="toast" class="toast"></div>
+
+<div class="container">
+  <div class="meta-box">
+    <div class="section-label">Informazioni Evento</div>
+    <div class="meta-grid">
+      <div>
+        <label>Titolo PDP</label>
+        <input type="text" id="evTitle" placeholder="es. PDP_Bad Bunny Night_24-04-2026" oninput="onTitleChange()">
+        <div class="hint">Formato: <span>PDP_Nome Evento_GG-MM-AAAA</span></div>
+      </div>
+      <div>
+        <label>Percorso Drive</label>
+        <div class="drive-path" id="drivePath"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('editor')">✏️ Editor</div>
+    <div class="tab" onclick="switchTab('preview')">👁 Anteprima</div>
+  </div>
+
+  <div id="tab-editor" class="tab-content active">
+    <div class="table-wrap">
+      <table class="et">
+        <thead><tr>
+          <th>DALLE</th><th>ALLE</th><th>DOVE</th><th>COSA</th><th>REFERENTE</th><th>NOTE</th>
+          <th>HL</th><th></th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <button class="add-btn" onclick="addRow()">＋ Aggiungi movimento</button>
+  </div>
+
+  <div id="tab-preview" class="tab-content">
+    <div class="prev-wrap"><table class="prev" id="prevTable"></table></div>
+  </div>
+</div>
+
+<div class="actions">
+  <button class="btn-s" onclick="resetAll()">↺ Reset</button>
+  <button class="btn-p" id="dlBtn" onclick="generateAndDownload()">
+    <span>⬇ Scarica</span>
+    <div class="spinner" id="dlSpinner"></div>
+  </button>
+  <button class="btn-drive" id="driveBtn" onclick="saveOnDrive()">
+    <span id="driveLabel">☁ Salva su Drive</span>
+    <div class="spinner" id="driveSpinner"></div>
+  </button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<script>
+// ── CONFIG ──
+const CLIENT_ID = '77283457900-t6o0hkoadoann9idil56e0vb7919k32r.apps.googleusercontent.com';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+
+// ── Drive folder map ──
+const EVENTI_2026_ID = '1VOupcuUIxMfDBPANh10kS4XGnIlizugb';
+const MONTH_FOLDERS = {
+  '01': null, '02': null,
+  '03': '1bHOqby1HXXmWtoMuEmktdgddJE0aruxe',
+  '04': '1pDuzrlr0Bg25EYeZo2zTZupOnLi29Ai4',
+  '05': '1WCBmFR1N8lfJ5bscYSPbAjRlCHuFz7mw',
+  '06': '1bdpOnTu6slyYDPviDOYtMCLwfjbwFQlt',
+  '07': null, '08': null, '09': null, '10': null, '11': null, '12': null,
+};
+const MONTH_NAMES = {
+  '01':'gennaio','02':'febbraio','03':'marzo','04':'aprile',
+  '05':'maggio','06':'giugno','07':'luglio','08':'agosto',
+  '09':'settembre','10':'ottobre','11':'novembre','12':'dicembre'
+};
+
+let accessToken = null;
+let rows = [];
+
+// ── AUTH ──
+function handleAuth() {
+  if (accessToken) { signOut(); return; }
+  const params = new URLSearchParams({
+    client_id: CLIENT_ID,
+    redirect_uri: window.location.href.split('?')[0].split('#')[0],
+    response_type: 'token',
+    scope: SCOPES,
+    prompt: 'consent',
+  });
+  window.open(`https://accounts.google.com/o/oauth2/v2/auth?${params}`, '_blank', 'width=500,height=600');
+  window.addEventListener('message', onOAuthMessage);
+}
+
+function onOAuthMessage(e) {
+  if (e.data && e.data.access_token) {
+    accessToken = e.data.access_token;
+    setConnected(true);
+    window.removeEventListener('message', onOAuthMessage);
+  }
+}
+
+// Also handle hash fragment if redirected back
+(function checkHash() {
+  const hash = window.location.hash;
+  if (hash.includes('access_token')) {
+    const p = new URLSearchParams(hash.slice(1));
+    const token = p.get('access_token');
+    if (token) {
+      accessToken = token;
+      setConnected(true);
+      history.replaceState(null, '', window.location.pathname);
+    }
+  }
+})();
+
+function setConnected(yes) {
+  const badge = document.getElementById('authBadge');
+  const label = document.getElementById('authLabel');
+  const btn = document.getElementById('authBtn');
+  if (yes) {
+    badge.className = 'auth-badge connected';
+    label.textContent = 'Google connesso';
+    btn.textContent = 'Disconnetti';
+    btn.className = 'btn-auth connected';
+  } else {
+    badge.className = 'auth-badge';
+    label.textContent = 'Non connesso';
+    btn.textContent = 'Connetti Google';
+    btn.className = 'btn-auth';
+  }
+}
+
+function signOut() {
+  accessToken = null;
+  setConnected(false);
+}
+
+// ── DRIVE API HELPERS ──
+async function driveRequest(url, options = {}) {
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      ...(options.headers || {}),
+    }
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+async function createFolder(name, parentId) {
+  return driveRequest('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      name,
+      mimeType: 'application/vnd.google-apps.folder',
+      parents: [parentId],
+    })
+  });
+}
+
+async function findFolder(name, parentId) {
+  const q = encodeURIComponent(`name='${name}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`);
+  const res = await driveRequest(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,webViewLink)`);
+  return res.files?.[0] || null;
+}
+
+async function uploadFile(name, buffer, parentId) {
+  const metadata = JSON.stringify({ name, parents: [parentId], mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const body = new FormData();
+  body.append('metadata', new Blob([metadata], {type:'application/json'}));
+  body.append('file', new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink', {
+    method: 'POST',
+    headers: {'Authorization': `Bearer ${accessToken}`},
+    body,
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); }
+  return res.json();
+}
+
+// ── TITLE / PATH PARSING ──
+const DEFAULTS = [
+  {d:'19:00',a:'',dv:'Sala Convegni',c:'Allestimento camerino',r:'Bea',n:'',hl:''},
+  {d:'20:30',a:'',dv:'Sala Convegni',c:'Convocazione tecnico',r:'Bea',n:'',hl:''},
+  {d:'20:30',a:'21:00',dv:'Sala convegni',c:'Allestimento service',r:'tecnico',n:'',hl:''},
+  {d:'21:00',a:'',dv:'Sala Convegni',c:'Convocazione artisti',r:'Bea',n:'',hl:''},
+  {d:'21:00',a:'',dv:'Sala Convegni',c:'Convocazione ballerini',r:'Bea',n:'',hl:''},
+  {d:'21:00',a:'21:30',dv:'Sala convegni',c:'Soundcheck',r:'tecnico + artisti',n:'',hl:''},
+  {d:'21:30',a:'',dv:'Off.Cantelmo',c:'Conv. risorse',r:'Bea',n:'1 risorsa botteghino, 3 risorse sicurezza',hl:''},
+  {d:'22:00',a:'',dv:'Off.Cantelmo',c:'Apertura porte e ingresso pubblico',r:'Bea + sicurezza',n:'',hl:''},
+  {d:'22:30',a:'',dv:'Off.Cantelmo',c:'Inizio evento',r:'resp.produzione + tecnico',n:"da valutare in base alle presenze, allungarsi massimo di 20 min sull'orario di inizio",hl:'green'},
+  {d:'02:00',a:'',dv:'Off.Cantelmo',c:'Termine evento',r:'resp.produzione',n:'',hl:'blue'},
+  {d:'03:00',a:'',dv:'Off.Cantelmo',c:'Chiusura locale',r:"resp.cassa e/o resp.spazio + resp.produzione",n:"questo segue gli orari di apertura e chiusura dello spazio\nN.B: il resp.produzione non ha il dovere di fare chiusure dell'attività commerciale",hl:''},
+];
+
+function parseTitle(raw) {
+  const m = raw.trim().match(/(\d{2})-(\d{2})-(\d{4})$/);
+  if (!m) return null;
+  return { day: m[1], month: m[2], year: m[3] };
+}
+
+function getDriveInfo(titleVal) {
+  const parsed = parseTitle(titleVal);
+  if (!parsed) return null;
+  const monthFolderId = MONTH_FOLDERS[parsed.month];
+  const monthName = MONTH_NAMES[parsed.month];
+  const dayInt = parseInt(parsed.day, 10);
+  // Event name: remove PDP_ prefix and date suffix
+  const inner = titleVal.replace(/^PDP_/i, '').replace(/_\d{2}-\d{2}-\d{4}$/, '');
+  const folderName = `${dayInt} ${monthName.toUpperCase()}_${inner.toUpperCase()}`;
+  const pathLabel = `Eventi 2026 → ${parsed.month.replace(/^0/,'')}. ${monthName} → ${folderName}`;
+  return { parsed, monthFolderId, folderName, pathLabel, fileName: titleVal };
+}
+
+function onTitleChange() {
+  const val = document.getElementById('evTitle').value;
+  const info = getDriveInfo(val);
+  const pathEl = document.getElementById('drivePath');
+  if (info) {
+    pathEl.innerHTML = `<strong>☁ ${info.pathLabel}</strong>`;
+    pathEl.classList.add('show');
+  } else {
+    pathEl.classList.remove('show');
+  }
+  renderPreview();
+}
+
+// ── UI ──
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['editor','preview'][i]===t));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  if(t==='preview') renderPreview();
+}
+
+function ev(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function ah(el){el.style.height='auto';el.style.height=el.scrollHeight+'px'}
+
+function renderEditor() {
+  const tb=document.getElementById('tbody'); tb.innerHTML='';
+  rows.forEach((row,i)=>{
+    const tr=document.createElement('tr'); tr.className=row.hl?'hl-'+row.hl:'';
+    tr.innerHTML=`
+      <td class="t-d"><input type="text" value="${ev(row.d)}" placeholder="HH:MM" oninput="rows[${i}].d=this.value"></td>
+      <td class="t-a"><input type="text" value="${ev(row.a)}" placeholder="HH:MM" oninput="rows[${i}].a=this.value"></td>
+      <td class="t-dv"><input type="text" value="${ev(row.dv)}" oninput="rows[${i}].dv=this.value"></td>
+      <td class="t-c"><input type="text" value="${ev(row.c)}" oninput="rows[${i}].c=this.value"></td>
+      <td class="t-r"><input type="text" value="${ev(row.r)}" oninput="rows[${i}].r=this.value"></td>
+      <td class="t-n"><textarea oninput="rows[${i}].n=this.value;ah(this)">${ev(row.n)}</textarea></td>
+      <td class="t-hl"><div class="hl-grp">
+        <button class="hlb n ${!row.hl?'on':''}" onclick="setHL(${i},'')"></button>
+        <button class="hlb g ${row.hl==='green'?'on':''}" onclick="setHL(${i},'green')"></button>
+        <button class="hlb b ${row.hl==='blue'?'on':''}" onclick="setHL(${i},'blue')"></button>
+      </div></td>
+      <td class="t-x"><button class="xbtn" onclick="delRow(${i})">×</button></td>`;
+    tb.appendChild(tr);
+    tr.querySelectorAll('textarea').forEach(ah);
+  });
+}
+
+function setHL(i,v){rows[i].hl=v;renderEditor()}
+function delRow(i){rows.splice(i,1);renderEditor()}
+function addRow(){rows.push({d:'',a:'',dv:'',c:'',r:'',n:'',hl:''});renderEditor();setTimeout(()=>{const ts=document.querySelectorAll('#tbody tr');ts[ts.length-1].scrollIntoView({behavior:'smooth',block:'center'})},80)}
+function resetAll(){if(confirm('Vuoi resettare tutto?')){rows=DEFAULTS.map(r=>({...r}));document.getElementById('evTitle').value='';document.getElementById('drivePath').classList.remove('show');renderEditor()}}
+
+function renderPreview(){
+  const title=document.getElementById('evTitle').value.trim()||'PDP Evento';
+  let h=`<tr class="r-title"><td colspan="6">${ev(title)}</td></tr>`;
+  h+=`<tr class="r-head"><th>dalle</th><th>alle</th><th>dove</th><th>cosa</th><th>referente</th><th>NOTE</th></tr>`;
+  rows.forEach(row=>{
+    const rc=row.hl==='green'?'r-green':row.hl==='blue'?'r-blue':'r-norm';
+    const gSt=row.hl==='green'?'background:#00ff00;':''; const bSt=row.hl==='blue'?'background:#9fc5e8;':'';
+    const hlSt=gSt||bSt; const bold=row.hl?'font-weight:700;':'';
+    const nh=ev(row.n||'').replace(/\n/g,'<br>');
+    if(!row.a){
+      h+=`<tr class="${rc}"><td colspan="2" class="tc" style="${hlSt}${bold}">${ev(row.d)}</td><td>${ev(row.dv)}</td><td style="${hlSt}${bold}">${ev(row.c)}</td><td style="${hlSt}${bold}">${ev(row.r)}</td><td style="${hlSt}${bold}">${nh}</td></tr>`;
+    } else {
+      h+=`<tr class="${rc}"><td class="tc" style="${hlSt}${bold}">${ev(row.d)}</td><td class="tc" style="${hlSt}${bold}">${ev(row.a)}</td><td>${ev(row.dv)}</td><td style="${hlSt}${bold}">${ev(row.c)}</td><td style="${hlSt}${bold}">${ev(row.r)}</td><td style="${hlSt}${bold}">${nh}</td></tr>`;
+    }
+  });
+  document.getElementById('prevTable').innerHTML=h;
+}
+
+function showToast(msg, type='error'){
+  const t=document.getElementById('toast');
+  t.innerHTML=msg; t.className=`toast ${type} show`;
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.classList.remove('show'), type==='success'?7000:5000);
+}
+
+// ── WORKBOOK ──
+async function buildWorkbook() {
+  const title = document.getElementById('evTitle').value.trim() || 'PDP Evento';
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Foglio1');
+  ws.columns=[{width:8},{width:8},{width:18},{width:28},{width:28},{width:70}];
+  const GRAY='FFD9D9D9', GREEN='FF00FF00', BLUE='FF9FC5E8';
+  const sc=(cell,{bold=false,fillArgb=null,hAlign='left'}={})=>{
+    cell.font={name:'Lexend',bold,size:cell.row===1?16:12};
+    if(fillArgb) cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:fillArgb}};
+    cell.alignment={horizontal:hAlign,vertical:'bottom',wrapText:true};
+  };
+  ws.mergeCells('A1:F1');
+  const tc=ws.getCell('A1'); tc.value=title; sc(tc,{fillArgb:GRAY,hAlign:'center'});
+  ['dalle','alle','dove','cosa','referente','NOTE'].forEach((h,i)=>{
+    const c=ws.getCell(2,i+1); c.value=h; sc(c,{bold:true,fillArgb:GRAY,hAlign:'center'});
+  });
+  rows.forEach((row,idx)=>{
+    const r=idx+3; const hl=row.hl;
+    const bold=hl==='green'||hl==='blue';
+    const fillArgb=hl==='green'?GREEN:hl==='blue'?BLUE:null;
+    const hasA=row.a&&row.a.trim();
+    if(!hasA) ws.mergeCells(r,1,r,2);
+    const set=(col,val,useFill,center)=>{
+      const cell=ws.getCell(r,col); cell.value=val||null;
+      sc(cell,{bold,fillArgb:useFill?fillArgb:null,hAlign:center?'center':'left'});
+    };
+    set(1,row.d,true,true); if(hasA) set(2,row.a,true,true);
+    set(3,row.dv,false,false); set(4,row.c,true,false); set(5,row.r,true,false); set(6,row.n,true,false);
+  });
+  return wb;
+}
+
+// ── DOWNLOAD ──
+async function generateAndDownload(){
+  const title=document.getElementById('evTitle').value.trim()||'PDP Evento';
+  const btn=document.getElementById('dlBtn'); const sp=document.getElementById('dlSpinner');
+  btn.disabled=true; sp.classList.add('show');
+  try {
+    const wb=await buildWorkbook();
+    const buf=await wb.xlsx.writeBuffer();
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url=URL.createObjectURL(blob); const a=document.createElement('a');
+    a.href=url; a.download=(title.replace(/[^\w\s\-àèìòù]/g,'').replace(/\s+/g,'_')||'PDP')+'.xlsx';
+    a.click(); URL.revokeObjectURL(url);
+  } catch(e){ showToast('Errore: '+e.message); }
+  finally{ btn.disabled=false; sp.classList.remove('show'); }
+}
+
+// ── SAVE TO DRIVE ──
+async function saveOnDrive(){
+  if (!accessToken) { showToast('Prima connetti il tuo account Google con il pulsante in alto a destra!'); return; }
+  const titleVal = document.getElementById('evTitle').value.trim();
+  if (!titleVal) { showToast('Inserisci il titolo del PDP prima di salvare'); return; }
+  const info = getDriveInfo(titleVal);
+  if (!info) { showToast('Formato titolo non valido.<br>Usa: <strong>PDP_Nome Evento_GG-MM-AAAA</strong>'); return; }
+  if (!info.monthFolderId) { showToast(`La cartella del mese non è ancora nel Drive.<br>Creala in "Eventi 2026" e aggiorna il tool.`); return; }
+
+  const btn=document.getElementById('driveBtn'); const sp=document.getElementById('driveSpinner');
+  const label=document.getElementById('driveLabel');
+  btn.disabled=true; label.textContent='Caricamento...'; sp.classList.add('show');
+
+  try {
+    // 1. Find or create event folder
+    let folder = await findFolder(info.folderName, info.monthFolderId);
+    if (!folder) folder = await createFolder(info.folderName, info.monthFolderId);
+
+    // 2. Build Excel
+    const wb = await buildWorkbook();
+    const buf = await wb.xlsx.writeBuffer();
+
+    // 3. Upload file
+    const file = await uploadFile(info.fileName + '.xlsx', buf, folder.id);
+
+    const fileUrl = file.webViewLink || `https://drive.google.com/file/d/${file.id}/view`;
+    const folderUrl = folder.webViewLink || `https://drive.google.com/drive/folders/${folder.id}`;
+
+    showToast(
+      `✅ Salvato su Drive!<br>
+      <small>${info.pathLabel}</small><br><br>
+      <a href="${fileUrl}" target="_blank">📄 Apri il file</a> &nbsp;·&nbsp;
+      <a href="${folderUrl}" target="_blank">📁 Apri la cartella</a>`,
+      'success'
+    );
+  } catch(e) {
+    if (e.message.includes('401') || e.message.includes('invalid_token')) {
+      accessToken = null; setConnected(false);
+      showToast('Sessione scaduta. Ricollega il tuo account Google.');
+    } else {
+      showToast('Errore Drive: ' + e.message);
+    }
+  } finally {
+    btn.disabled=false; label.textContent='☁ Salva su Drive'; sp.classList.remove('show');
+  }
+}
+
+rows=DEFAULTS.map(r=>({...r}));
+renderEditor();
+</script>
+</body>
+</html>

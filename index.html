@@ -189,7 +189,7 @@ function handleAuth() {
   if (accessToken) { signOut(); return; }
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
-    redirect_uri: window.location.href.split('?')[0].split('#')[0],
+    redirect_uri: 'https://bbrocca-gif.github.io/pdp-compiler/',
     response_type: 'token',
     scope: SCOPES,
     prompt: 'consent',

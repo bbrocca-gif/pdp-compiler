@@ -194,8 +194,8 @@ function handleAuth() {
     scope: SCOPES,
     prompt: 'consent',
   });
-  window.open(`https://accounts.google.com/o/oauth2/v2/auth?${params}`, '_blank', 'width=500,height=600');
-  window.addEventListener('message', onOAuthMessage);
+  window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+  
 }
 
 function onOAuthMessage(e) {
